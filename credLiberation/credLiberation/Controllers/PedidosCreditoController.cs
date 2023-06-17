@@ -16,9 +16,9 @@ namespace credLiberation.Controllers
             _context = context;
         }
 
-        //Create
+        //Pedido
         [HttpPost]
-        public JsonResult Create(PedidoDeCredito pedido)
+        public JsonResult Pedido(PedidoDeCredito pedido)
         {
             if (pedido.Id == 0)
             {
@@ -27,8 +27,13 @@ namespace credLiberation.Controllers
                 #region Variáveis
 
                 var validacoes = pedido.Validacao;
+
                 var tipoClienteValidacao = validacoes.TipoCliente.Trim().ToLower();
+                tipoClienteValidacao = tipoClienteValidacao.Replace(" ", "");
+
                 var tipoCliente = pedido.Tipo.Trim().ToLower();
+                tipoCliente = tipoCliente.Replace(" ", "");
+
                 var intervaloDtPrimeiroVencimento = (pedido.DtPrimeiroVencimento - DateTime.Today).Days; 
 
                 #endregion
@@ -48,11 +53,11 @@ namespace credLiberation.Controllers
                     case "imobiliário":
                     case "imobiliario": taxaJuros = Convert.ToDouble(TipoCredito.Imobiliario); break;
                     default:
-                        return new JsonResult(BadRequest());
+                        return new JsonResult(BadRequest("Tipo de Crédito inválido"));
                 }
 
-                var valorJuros = (pedido.Valor * taxaJuros);
-                var valorTotal = (pedido.Valor * valorJuros);
+                var valorJuros = (pedido.Valor * (taxaJuros/100));
+                var valorTotal = (pedido.Valor + valorJuros);
 
                 #endregion
 
@@ -76,13 +81,10 @@ namespace credLiberation.Controllers
                 {
                     Resultado resultado = new Resultado
                     {
-                        Status = statusPedido,
+                        Status = StatusPedido.Aprovado.ToString(),
                         ValorJuros = valorJuros,
                         TotalComJuros = valorTotal
                     };
-
-                    _context.Pedidos.Add(pedido);
-                    _context.SaveChanges();
 
                     return new JsonResult(Ok(resultado));
                 }
@@ -90,7 +92,7 @@ namespace credLiberation.Controllers
                 {
                     Resultado resultado = new Resultado
                     {
-                        Status = statusPedido,
+                        Status = StatusPedido.Recusado.ToString(),
                         ValorJuros = valorJuros,
                         TotalComJuros = valorTotal
                     };
@@ -100,7 +102,7 @@ namespace credLiberation.Controllers
             }
             else
             {
-                return new JsonResult(BadRequest("Para fazer um pedido use Id = 0"));
+                return new JsonResult(BadRequest());
             }
         }
     }
